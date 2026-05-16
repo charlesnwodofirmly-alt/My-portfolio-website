@@ -38,11 +38,18 @@ button{font-family:'Poppins',sans-serif;cursor:pointer;border:none;background:no
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 .pulse{animation:pulse 1.8s ease-in-out infinite}
 
-/* ═══════════════════════════════════════════
-   IMAGE GALLERY  (manual arrow navigation)
-═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   CGD GALLERY — 3-slide carousel with modal pop-out
+═══════════════════════════════════════════════════════ */
 
-/* Outer wrapper — sets the fixed box size */
+/* ── "Our Work" label above the box ── */
+.gallery-label{
+  font-size:.6rem;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.45);
+  margin-bottom:8px;
+}
+
+/* ── Outer container: portrait aspect, clipped ── */
 .gallery-box{
   position:relative;
   width:100%;
@@ -50,41 +57,50 @@ button{font-family:'Poppins',sans-serif;cursor:pointer;border:none;background:no
   overflow:hidden;
   background:#0d0d14;
   box-shadow:0 16px 48px rgba(0,0,0,.55);
-  /* Height matches the tallest portrait poster */
   aspect-ratio:4/5;
   max-height:520px;
+  /* Establish stacking context so z-indices inside work */
+  isolation:isolate;
 }
 
-/* All panels stacked on top of each other */
+/* ── Slide panels — all stacked, hidden by default via opacity+translate ── */
 .g-panel{
   position:absolute;
   inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  /* slide-in from right by default, slide-out to left */
+  /* Start off-screen to the right */
   transform:translateX(100%);
-  transition:transform .42s cubic-bezier(.4,0,.2,1);
+  opacity:0;
+  transition:transform .42s cubic-bezier(.4,0,.2,1),
+             opacity   .42s cubic-bezier(.4,0,.2,1);
   pointer-events:none;
+  cursor:zoom-in; /* hint that clicking opens modal */
 }
-/* active panel sits at 0 */
+/* Active slide: centred, fully visible */
 .g-panel.active{
   transform:translateX(0);
+  opacity:1;
   pointer-events:auto;
 }
-/* panel that just left goes to the left */
+/* Leaving slide (going left — next was clicked) */
 .g-panel.leaving{
   transform:translateX(-100%);
+  opacity:0;
 }
-/* reverse direction when going backwards */
-.g-panel.from-left{
-  transform:translateX(-100%);
-}
+/* Leaving slide (going right — prev was clicked) */
 .g-panel.leaving-right{
   transform:translateX(100%);
+  opacity:0;
+}
+/* Incoming from the left (prev was clicked) */
+.g-panel.from-left{
+  transform:translateX(-100%);
+  opacity:0;
 }
 
-/* The image fills the box, fully visible — never cropped */
+/* ── Slide image: contain so full poster is always visible ── */
 .g-panel img{
   width:100%;
   height:100%;
@@ -92,37 +108,60 @@ button{font-family:'Poppins',sans-serif;cursor:pointer;border:none;background:no
   object-position:center;
   display:block;
   border-radius:0;
+  /* Prevent browser drag-select interfering with swipe */
+  user-select:none;
+  -webkit-user-drag:none;
 }
 
-/* Dark gradient at the bottom for caption readability */
+/* ── Gradient scrim at bottom for caption legibility ── */
 .g-panel::after{
   content:'';
   position:absolute;
   bottom:0;left:0;right:0;
-  height:35%;
-  background:linear-gradient(0deg,rgba(0,0,0,.72) 0%,transparent 100%);
+  height:38%;
+  background:linear-gradient(to top, rgba(0,0,0,.78) 0%, transparent 100%);
   pointer-events:none;
   z-index:1;
 }
 
-/* Caption */
+/* ── Caption block ── */
 .g-caption{
   position:absolute;
   bottom:0;left:0;right:0;
-  padding:18px 18px 14px;
+  padding:20px 18px 16px;
   z-index:2;
 }
 .g-caption .g-cat{
-  font-size:.6rem;font-weight:700;
-  letter-spacing:2px;text-transform:uppercase;
-  color:rgba(255,255,255,.7);display:block;margin-bottom:3px;
+  display:block;
+  font-size:.58rem;font-weight:700;
+  letter-spacing:2.5px;text-transform:uppercase;
+  color:rgba(255,255,255,.65);
+  margin-bottom:4px;
 }
 .g-caption .g-title{
-  font-size:.88rem;font-weight:800;
-  color:#fff;letter-spacing:-.2px;display:block;
+  display:block;
+  font-size:.92rem;font-weight:800;
+  color:#fff;letter-spacing:-.2px;
+  line-height:1.3;
 }
 
-/* Counter badge — top right */
+/* ── "Click to expand" hint badge on active slide ── */
+.g-expand-hint{
+  position:absolute;
+  top:12px;left:12px;z-index:4;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.2);
+  color:rgba(255,255,255,.75);
+  font-size:.55rem;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;
+  padding:4px 10px;border-radius:50px;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .25s;
+}
+.gallery-box:hover .g-expand-hint{opacity:1;}
+
+/* ── Counter badge — top right ── */
 .g-counter{
   position:absolute;top:12px;right:12px;z-index:4;
   background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
@@ -132,50 +171,125 @@ button{font-family:'Poppins',sans-serif;cursor:pointer;border:none;background:no
   pointer-events:none;
 }
 
-/* Arrow buttons */
+/* ── Arrow buttons ── */
 .g-arrow{
   position:absolute;top:50%;transform:translateY(-50%);
   z-index:5;
   width:40px;height:40px;border-radius:50%;
   background:rgba(0,0,0,.45);
-  border:1.5px solid rgba(255,255,255,.3);
-  color:#fff;font-size:1.05rem;line-height:1;
+  border:1.5px solid rgba(255,255,255,.28);
+  color:#fff;font-size:1.1rem;line-height:1;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;
   backdrop-filter:blur(8px);
-  transition:background .2s,transform .25s,border-color .2s;
+  transition:background .2s,border-color .2s,transform .22s;
 }
 .g-arrow:hover{
   background:var(--blue);
   border-color:var(--blue);
-  transform:translateY(-50%) scale(1.1);
+  transform:translateY(-50%) scale(1.12);
 }
-.g-arrow.prev{left:12px}
-.g-arrow.next{right:12px}
+.g-arrow.prev{left:12px;}
+.g-arrow.next{right:12px;}
+/* Dim arrow when at edge */
+.g-arrow[disabled]{opacity:.3;cursor:default;pointer-events:none;}
 
-/* Dot strip — bottom centre */
+/* ── Dot strip below the box ── */
 .g-dots{
-  display:flex;gap:5px;
+  display:flex;gap:6px;
   justify-content:center;
   margin-top:12px;
 }
 .g-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:rgba(255,255,255,.25);
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,.22);
   border:none;padding:0;cursor:pointer;
   transition:background .25s,width .25s,border-radius .25s;
 }
 .g-dot.on{
   background:#fff;
-  width:20px;
+  width:22px;
   border-radius:4px;
 }
 
-/* "Our Work" label */
-.gallery-label{
-  font-size:.6rem;font-weight:700;letter-spacing:2.5px;
-  text-transform:uppercase;color:rgba(255,255,255,.45);
-  margin-bottom:8px;
+/* ═══════════════════════════════════════════════════════
+   MODAL — full-screen image pop-out
+═══════════════════════════════════════════════════════ */
+
+/* Backdrop */
+.g-modal{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.88);
+  backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  /* Hidden state */
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .3s ease, visibility .3s ease;
+}
+/* Visible state (JS adds this class) */
+.g-modal.open{
+  opacity:1;
+  visibility:visible;
+}
+
+/* Inner frame */
+.g-modal-inner{
+  position:relative;
+  max-width:min(560px, 92vw);
+  width:100%;
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,.7);
+  /* Pop-in animation */
+  transform:scale(.88);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.g-modal.open .g-modal-inner{
+  transform:scale(1);
+}
+
+/* The full-res image inside the modal */
+.g-modal-inner img{
+  width:100%;
+  height:auto;
+  display:block;
+  border-radius:16px;
+}
+
+/* Caption bar below modal image */
+.g-modal-caption{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:16px 18px 14px;
+  background:linear-gradient(to top, rgba(0,0,0,.82) 0%, transparent 100%);
+  border-radius:0 0 16px 16px;
+}
+.g-modal-caption .g-cat{
+  display:block;
+  font-size:.58rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:3px;
+}
+.g-modal-caption .g-title{
+  display:block;
+  font-size:.95rem;font-weight:800;color:#fff;
+}
+
+/* Close button */
+.g-modal-close{
+  position:absolute;top:12px;right:12px;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(0,0,0,.55);
+  border:1.5px solid rgba(255,255,255,.3);
+  color:#fff;font-size:1.1rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:10;
+  transition:background .2s,transform .2s;
+}
+.g-modal-close:hover{
+  background:var(--blue);
+  transform:scale(1.1);
 }
 
 /* ─── SCROLL REVEAL ───────────────────────────────────── */
@@ -641,61 +755,52 @@ footer{background:var(--dark);color:rgba(255,255,255,.52);padding:60px clamp(1re
 
           <div class="gallery-box" id="galleryBox">
 
-            <!-- Counter -->
-            <div class="g-counter" id="gCounter">1 / 6</div>
+            <!-- "Click to expand" hint (fades in on hover via CSS) -->
+            <div class="g-expand-hint">&#9654; Click to expand</div>
 
-            <!-- Arrows -->
-            <button class="g-arrow prev" id="gPrev" aria-label="Previous">&#8592;</button>
-            <button class="g-arrow next" id="gNext" aria-label="Next">&#8594;</button>
+            <!-- Counter badge: top-right -->
+            <div class="g-counter" id="gCounter">1 / 3</div>
 
-            <!-- Panel 0 – Abaya & Bougee -->
-            <div class="g-panel active" data-index="0">
-              <img src="/mnt/user-data/uploads/Abaya___Bougee_II.png" alt="Abaya & Bougee" loading="eager"/>
+            <!-- Navigation arrows -->
+            <button class="g-arrow prev" id="gPrev" aria-label="Previous slide" disabled>&#8592;</button>
+            <button class="g-arrow next" id="gNext" aria-label="Next slide">&#8594;</button>
+
+            <!-- ═══ SLIDE 0 — Abaya & Bougee ═══
+                 Replace src with your actual file path, e.g. src="images/abaya.jpg" -->
+            <div class="g-panel active" data-index="0"
+                 data-cat="Branding &amp; Identity"
+                 data-title="Abaya &amp; Bougee — Thrifted Luxury">
+              <img src="images/abaya.jpg"
+                   alt="Abaya and Bougee — thrifted luxury fashion branding"
+                   loading="eager"/>
               <div class="g-caption">
                 <span class="g-cat">Branding &amp; Identity</span>
                 <span class="g-title">Abaya &amp; Bougee — Thrifted Luxury</span>
               </div>
             </div>
 
-            <!-- Panel 1 – Xtraordinary Queen -->
-            <div class="g-panel" data-index="1">
-              <img src="/mnt/user-data/uploads/Xtraordinary_Queen_May_2026.png" alt="Xtraordinary Queen" loading="lazy"/>
-              <div class="g-caption">
-                <span class="g-cat">Event Design</span>
-                <span class="g-title">Xtraordinary Queen — May 2026</span>
-              </div>
-            </div>
-
-            <!-- Panel 2 – Unshakeable Praise -->
-            <div class="g-panel" data-index="2">
-              <img src="/mnt/user-data/uploads/1778923230887_Unshakeable_Praise_2026_Main_Event.png" alt="Unshakeable Praise 2026" loading="lazy"/>
-              <div class="g-caption">
-                <span class="g-cat">Event Flyer</span>
-                <span class="g-title">Unshakeable Praise 2026</span>
-              </div>
-            </div>
-
-            <!-- Panel 3 – LBS May 2026 -->
-            <div class="g-panel" data-index="3">
-              <img src="/mnt/user-data/uploads/1778923230889_LBS_May_2026.png" alt="LBS Hello May" loading="lazy"/>
+            <!-- ═══ SLIDE 1 — Hello May (LBS Sustainability) ═══
+                 Replace src with your actual file path, e.g. src="images/hello-may.jpg" -->
+            <div class="g-panel" data-index="1"
+                 data-cat="Corporate Design"
+                 data-title="LBS Sustainability — Hello May 2026">
+              <img src="images/hello-may.jpg"
+                   alt="LBS Sustainability Centre — Hello May 2026 corporate design"
+                   loading="lazy"/>
               <div class="g-caption">
                 <span class="g-cat">Corporate Design</span>
                 <span class="g-title">LBS Sustainability — Hello May 2026</span>
               </div>
             </div>
 
-            <!-- Panel 4 – LBS Carousel Ads -->
-            <div class="g-panel" data-index="4">
-              <img src="/mnt/user-data/uploads/1778923230890_LBS_NFLM_Carousels_Ads_1.png" alt="LBS NFLM Carousel" loading="lazy"/>
-              <div class="g-caption">
-                <span class="g-cat">Social Media Design</span>
-                <span class="g-title">LBS — Non-Profit Leadership Series</span>
-              </div>
-            </div>
-
-            <!-- Panel 5 – TOTM Jars of Clay -->
-            <div class="g-panel" data-index="5">
-              <img src="/mnt/user-data/uploads/1778923230891_TOTM_May__26_Part_I___II__.png" alt="TOTM Jars of Clay" loading="lazy"/>
+            <!-- ═══ SLIDE 2 — Jars of Clay (TOTM) ═══
+                 Replace src with your actual file path, e.g. src="images/jars-of-clay.jpg" -->
+            <div class="g-panel" data-index="2"
+                 data-cat="Ministry Event Design"
+                 data-title="TOTM — Jars of Clay, May 2026">
+              <img src="images/jars-of-clay.jpg"
+                   alt="Tunde Olawale Teaching Ministries — Jars of Clay event flyer"
+                   loading="lazy"/>
               <div class="g-caption">
                 <span class="g-cat">Ministry Event Design</span>
                 <span class="g-title">TOTM — Jars of Clay, May 2026</span>
@@ -704,7 +809,7 @@ footer{background:var(--dark);color:rgba(255,255,255,.52);padding:60px clamp(1re
 
           </div><!-- /gallery-box -->
 
-          <!-- Dot strip below box -->
+          <!-- Dot indicators (built by JS) -->
           <div class="g-dots" id="gDots"></div>
 
         </div><!-- /left column -->
@@ -923,6 +1028,19 @@ footer{background:var(--dark);color:rgba(255,255,255,.52);padding:60px clamp(1re
   </div>
 </footer>
 
+<!-- ═══ GALLERY MODAL ════════════════════════════════════════════ -->
+<!--
+  This modal is populated by JavaScript when a slide is clicked.
+  It is hidden by default (opacity:0; visibility:hidden) and
+  shown by adding the "open" class via JS.
+-->
+<div class="g-modal" id="gModal" role="dialog" aria-modal="true" aria-label="Image preview">
+  <div class="g-modal-inner" id="gModalInner">
+    <!-- JS injects <img> and caption here at click time -->
+    <button class="g-modal-close" id="gModalClose" aria-label="Close preview">&#10005;</button>
+  </div>
+</div>
+
 <!-- ═══ SCRIPTS ═══════════════════════════════════════════════════ -->
 <script>
 /* ─ Mobile drawer ─ */
@@ -936,126 +1054,222 @@ window.addEventListener('scroll', () => {
 
 /* ─ Scroll reveal ─ */
 const revealObs = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
+  for (const e of entries) {
     if (e.isIntersecting) {
       e.target.classList.add('in')
       revealObs.unobserve(e.target)
     }
-  })
+  }
 }, { threshold: 0.1 })
-document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el))
+for (const el of Array.from(document.querySelectorAll('.reveal'))) {
+  revealObs.observe(el)
+}
 
 /* ─ Portfolio filter ─ */
-document.querySelectorAll('.f-btn').forEach(btn => {
+for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
   btn.addEventListener('click', function () {
-    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('on'))
+    for (const b of Array.from(document.querySelectorAll('.f-btn'))) {
+      b.classList.remove('on')
+    }
     this.classList.add('on')
     const cat = this.dataset.cat
-    document.querySelectorAll('.p-item').forEach(item => {
+    for (const item of Array.from(document.querySelectorAll('.p-item'))) {
       const show = cat === 'all' || item.dataset.cat === cat
       item.style.display = show ? '' : 'none'
-    })
+    }
   })
-})
+}
 
-/* ══════════════════════════════
-   GALLERY ENGINE  (manual only)
-══════════════════════════════ */
-(function(){
-  const TOTAL   = 6;
-  let current   = 0;
+/* ══════════════════════════════════════════════════════
+   CGD GALLERY ENGINE
+   - 3 slides, manual arrow + dot navigation
+   - Slide transition: translate + opacity (no forEach on NodeList)
+   - Modal pop-out on active slide click
+   All NodeList iterations use Array.from() + for...of
+══════════════════════════════════════════════════════ */
+(function () {
 
-  const panels   = Array.from(document.querySelectorAll('.g-panel'));
-  const counterEl= document.getElementById('gCounter');
-  const dotsEl   = document.getElementById('gDots');
-  const prevBtn  = document.getElementById('gPrev');
-  const nextBtn  = document.getElementById('gNext');
-  const box      = document.getElementById('galleryBox');
+  /* ── Constants ── */
+  var TOTAL = 3;
+  var current = 0;
 
-  // Build dots
-  for(let i=0;i<TOTAL;i++){
-    const d=document.createElement('button');
-    d.className='g-dot'+(i===0?' on':'');
-    d.setAttribute('aria-label','Image '+(i+1));
-    d.onclick=()=>go(i);
-    dotsEl.appendChild(d);
+  /* ── Element references ── */
+  var box      = document.getElementById('galleryBox');
+  var counterEl= document.getElementById('gCounter');
+  var dotsEl   = document.getElementById('gDots');
+  var prevBtn  = document.getElementById('gPrev');
+  var nextBtn  = document.getElementById('gNext');
+  var modal    = document.getElementById('gModal');
+  var modalInner = document.getElementById('gModalInner');
+  var modalClose = document.getElementById('gModalClose');
+
+  /* Convert NodeList → plain array (avoids the forEach TypeError) */
+  var panels = Array.from(document.querySelectorAll('.g-panel'));
+
+  /* ── Build dot indicators ── */
+  for (var i = 0; i < TOTAL; i++) {
+    var dot = document.createElement('button');
+    dot.className = 'g-dot' + (i === 0 ? ' on' : '');
+    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    /* IIFE captures i correctly in the closure */
+    dot.addEventListener('click', (function (idx) {
+      return function () { goTo(idx); };
+    })(i));
+    dotsEl.appendChild(dot);
   }
 
-  function go(n, dir){
-    if(n===current) return;
-    const direction = (dir !== undefined) ? dir : (n > current ? 1 : -1);
-    const prev = current;
+  /* ── Core navigation function ── */
+  function goTo(n, direction) {
+    if (n === current) return;
+
+    /* Default direction: forward if index increases */
+    var dir = (direction !== undefined) ? direction : (n > current ? 1 : -1);
+    var prev = current;
     current = ((n % TOTAL) + TOTAL) % TOTAL;
 
-    // Outgoing panel: slide out opposite to direction
-    const outgoing = panels[prev];
+    /* --- Outgoing panel --- */
+    var outgoing = panels[prev];
     outgoing.classList.remove('active');
-    outgoing.classList.add(direction > 0 ? 'leaving' : 'leaving-right');
+    outgoing.classList.add(dir > 0 ? 'leaving' : 'leaving-right');
 
-    // Incoming panel: start off-screen on the correct side
-    const incoming = panels[current];
-    // Remove any leftover classes first (no transition)
+    /* --- Incoming panel --- */
+    var incoming = panels[current];
+
+    /* 1. Snap to start position without transition */
     incoming.style.transition = 'none';
-    incoming.classList.remove('active','leaving','leaving-right','from-left');
-    incoming.classList.add(direction > 0 ? '' : 'from-left');
-    if(direction < 0) incoming.classList.add('from-left');
+    incoming.classList.remove('active', 'leaving', 'leaving-right', 'from-left');
+    if (dir < 0) incoming.classList.add('from-left');
 
-    // Force reflow so the start position registers before we apply transition
+    /* 2. Force reflow so browser registers the start position */
     void incoming.offsetWidth;
-    incoming.style.transition = '';
 
-    // Slide it in
+    /* 3. Re-enable transitions and animate in */
+    incoming.style.transition = '';
     incoming.classList.remove('from-left');
     incoming.classList.add('active');
 
-    // Clean up outgoing class after transition ends
-    outgoing.addEventListener('transitionend', function cleanup(){
-      outgoing.classList.remove('leaving','leaving-right');
+    /* 4. Clean up outgoing classes after transition completes */
+    outgoing.addEventListener('transitionend', function cleanup() {
+      outgoing.classList.remove('leaving', 'leaving-right');
       outgoing.removeEventListener('transitionend', cleanup);
     });
 
-    // Update dots & counter
-    document.querySelectorAll('.g-dot').forEach((d,i)=>d.classList.toggle('on',i===current));
-    counterEl.textContent = (current+1)+' / '+TOTAL;
+    /* --- Update dots (Array.from avoids NodeList.forEach issue) --- */
+    var allDots = Array.from(dotsEl.querySelectorAll('.g-dot'));
+    for (var i = 0; i < allDots.length; i++) {
+      allDots[i].classList.toggle('on', i === current);
+    }
 
-    // Arrow state
-    prevBtn.style.opacity = current === 0 ? '0.35' : '1';
-    nextBtn.style.opacity = current === TOTAL-1 ? '0.35' : '1';
+    /* --- Update counter --- */
+    counterEl.textContent = (current + 1) + ' / ' + TOTAL;
+
+    /* --- Disable/enable edge arrows --- */
+    prevBtn.disabled = (current === 0);
+    nextBtn.disabled = (current === TOTAL - 1);
   }
 
-  prevBtn.onclick = ()=>{ if(current>0) go(current-1, -1); };
-  nextBtn.onclick = ()=>{ if(current<TOTAL-1) go(current+1, 1); };
-
-  // Keyboard support
-  document.addEventListener('keydown',e=>{
-    if(e.key==='ArrowRight' && current<TOTAL-1) go(current+1,1);
-    if(e.key==='ArrowLeft'  && current>0)       go(current-1,-1);
+  /* ── Wire up arrow buttons ── */
+  prevBtn.addEventListener('click', function () {
+    if (current > 0) goTo(current - 1, -1);
+  });
+  nextBtn.addEventListener('click', function () {
+    if (current < TOTAL - 1) goTo(current + 1, 1);
   });
 
-  // Touch / swipe
-  let tx=0;
-  box.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
-  box.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-tx;
-    if(dx<-40 && current<TOTAL-1) go(current+1,1);
-    if(dx>40  && current>0)       go(current-1,-1);
-  },{passive:true});
+  /* ── Keyboard arrow support ── */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' && current < TOTAL - 1) goTo(current + 1, 1);
+    if (e.key === 'ArrowLeft'  && current > 0)         goTo(current - 1, -1);
+    if (e.key === 'Escape')                             closeModal();
+  });
 
-  // Initial state
-  prevBtn.style.opacity='0.35';
+  /* ── Touch / swipe support ── */
+  var touchStartX = 0;
+  box.addEventListener('touchstart', function (e) {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  box.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (dx < -40 && current < TOTAL - 1) goTo(current + 1, 1);
+    if (dx >  40 && current > 0)         goTo(current - 1, -1);
+  }, { passive: true });
+
+  /* ════════════════════════════════════════════════
+     MODAL — open on active slide click
+  ════════════════════════════════════════════════ */
+
+  /* Open modal and populate with current slide's image + caption */
+  function openModal(panel) {
+    var img   = panel.querySelector('img');
+    var cat   = panel.getAttribute('data-cat')   || '';
+    var title = panel.getAttribute('data-title') || '';
+
+    /* Clear any previous content (except close button) */
+    var oldImg     = modalInner.querySelector('img');
+    var oldCaption = modalInner.querySelector('.g-modal-caption');
+    if (oldImg)     oldImg.remove();
+    if (oldCaption) oldCaption.remove();
+
+    /* Inject full-res image */
+    if (img) {
+      var modalImg   = document.createElement('img');
+      modalImg.src   = img.src;
+      modalImg.alt   = img.alt;
+      /* Insert before close button */
+      modalInner.insertBefore(modalImg, modalClose);
+    }
+
+    /* Inject caption */
+    var caption = document.createElement('div');
+    caption.className = 'g-modal-caption';
+    caption.innerHTML =
+      '<span class="g-cat">' + cat + '</span>' +
+      '<span class="g-title">' + title + '</span>';
+    modalInner.appendChild(caption);
+
+    /* Show modal */
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden'; /* prevent background scroll */
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* Click on any active panel opens the modal */
+  for (var p = 0; p < panels.length; p++) {
+    panels[p].addEventListener('click', (function (panel) {
+      return function () {
+        if (panel.classList.contains('active')) openModal(panel);
+      };
+    })(panels[p]));
+  }
+
+  /* Close via X button */
+  modalClose.addEventListener('click', closeModal);
+
+  /* Close by clicking the backdrop (outside the inner box) */
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+
+  /* ── Initial state ── */
+  prevBtn.disabled = true; /* at slide 0, prev is disabled */
+
 })();
 
 
 /* ─ Smooth active nav highlight ─ */
-const sections = document.querySelectorAll('section[id]')
+const sections = Array.from(document.querySelectorAll('section[id]'))
 window.addEventListener('scroll', () => {
   let cur = ''
-  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 90) cur = s.id })
-  document.querySelectorAll('.nav-links a').forEach(a => {
+  for (const s of sections) { if (window.scrollY >= s.offsetTop - 90) cur = s.id }
+  for (const a of Array.from(document.querySelectorAll('.nav-links a'))) {
     const active = a.getAttribute('href') === '#' + cur
     a.style.color = active ? '#fff' : ''
     a.style.fontWeight = active ? '700' : ''
-  })
+  }
 }, { passive: true })
 </script>
 </body>
