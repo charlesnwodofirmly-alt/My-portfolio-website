@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CGD Concepts – We Build Brands that Stand Out</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet"/>
+
+<style>
+/* ─── RESET ───────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Poppins',sans-serif;background:#fff;color:#111;overflow-x:hidden}
+img{max-width:100%;display:block;object-fit:cover}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+button{font-family:'Poppins',sans-serif;cursor:pointer;border:none;background:none}
+
+/* ─── TOKENS ───────────────────────────────────────────── */
+:root{
+  --blue:#1740D4;
+  --blue-dk:#1133b8;
+  --green:#4ade80;
+  --yellow:#fbbf24;
+  --off:#f5f7ff;
+  --card-bg:#eef1fb;
+  --gray:#6b7280;
+  --gray-lt:#e5e9f4;
+  --dark:#0a0f1e;
+  --radius:18px;
+  --radius-sm:12px;
+  --nh:64px;
+}
+
+/* ─── PULSE ANIMATION (img placeholders) ──────────────── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.pulse{animation:pulse 1.8s ease-in-out infinite}
+
+/* ═══════════════════════════════════════════
+   IMAGE GALLERY  (manual arrow navigation)
+═══════════════════════════════════════════ */
+
+/* Outer wrapper — sets the fixed box size */
+.gallery-box{
+  position:relative;
+  width:100%;
+  border-radius:18px;
+  overflow:hidden;
+  background:#0d0d14;
+  box-shadow:0 16px 48px rgba(0,0,0,.55);
+  /* Height matches the tallest portrait poster */
+  aspect-ratio:4/5;
+  max-height:520px;
+}
+
+/* All panels stacked on top of each other */
+.g-panel{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  /* slide-in from right by default, slide-out to left */
+  transform:translateX(100%);
+  transition:transform .42s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+/* active panel sits at 0 */
+.g-panel.active{
+  transform:translateX(0);
+  pointer-events:auto;
+}
+/* panel that just left goes to the left */
+.g-panel.leaving{
+  transform:translateX(-100%);
+}
+/* reverse direction when going backwards */
+.g-panel.from-left{
+  transform:translateX(-100%);
+}
+.g-panel.leaving-right{
+  transform:translateX(100%);
+}
+
+/* The image fills the box, fully visible — never cropped */
+.g-panel img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+  border-radius:0;
+}
+
+/* Dark gradient at the bottom for caption readability */
+.g-panel::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:35%;
+  background:linear-gradient(0deg,rgba(0,0,0,.72) 0%,transparent 100%);
+  pointer-events:none;
+  z-index:1;
+}
+
+/* Caption */
+.g-caption{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:18px 18px 14px;
+  z-index:2;
+}
+.g-caption .g-cat{
+  font-size:.6rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.7);display:block;margin-bottom:3px;
+}
+.g-caption .g-title{
+  font-size:.88rem;font-weight:800;
+  color:#fff;letter-spacing:-.2px;display:block;
+}
+
+/* Counter badge — top right */
+.g-counter{
+  position:absolute;top:12px;right:12px;z-index:4;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.2);
+  color:#fff;font-size:.6rem;font-weight:700;
+  padding:4px 11px;border-radius:50px;letter-spacing:.5px;
+  pointer-events:none;
+}
+
+/* Arrow buttons */
+.g-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  z-index:5;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(0,0,0,.45);
+  border:1.5px solid rgba(255,255,255,.3);
+  color:#fff;font-size:1.05rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  backdrop-filter:blur(8px);
+  transition:background .2s,transform .25s,border-color .2s;
+}
+.g-arrow:hover{
+  background:var(--blue);
+  border-color:var(--blue);
+  transform:translateY(-50%) scale(1.1);
+}
+.g-arrow.prev{left:12px}
+.g-arrow.next{right:12px}
+
+/* Dot strip — bottom centre */
+.g-dots{
+  display:flex;gap:5px;
+  justify-content:center;
+  margin-top:12px;
+}
+.g-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,.25);
+  border:none;padding:0;cursor:pointer;
+  transition:background .25s,width .25s,border-radius .25s;
+}
+.g-dot.on{
+  background:#fff;
+  width:20px;
+  border-radius:4px;
+}
+
+/* "Our Work" label */
+.gallery-label{
+  font-size:.6rem;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.45);
+  margin-bottom:8px;
+}
+
+/* ─── SCROLL REVEAL ───────────────────────────────────── */
+/* ─── SCROLL REVEAL ───────────────────────────────────── */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+/* ─── IMG SLOT ────────────────────────────────────────── */
+.img-slot{
+  background:#dde3f5;border-radius:var(--radius);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;color:#9aa3c0;font-size:.72rem;font-weight:600;text-align:center;
+  padding:16px;
+}
+.img-slot svg{width:32px;height:32px;opacity:.35;stroke:#9aa3c0;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.img-slot.dashed{background:rgba(255,255,255,.06);border:1.5px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.3)}
+.img-slot.dashed svg{stroke:rgba(255,255,255,.3)}
+
+/* ─── NAV ─────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:300;
+  height:var(--nh);background:var(--blue);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 clamp(1rem,5vw,4rem);
+  transition:box-shadow .3s;
+}
+nav.scrolled{box-shadow:0 4px 24px rgba(0,0,0,.25)}
+.nav-logo{font-size:1.25rem;font-weight:900;color:#fff;letter-spacing:-.4px;white-space:nowrap}
+.nav-logo span{color:var(--green)}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{color:rgba(255,255,255,.82);font-size:.84rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-cta{
+  background:#fff;color:var(--blue);border-radius:50px;
+  padding:8px 20px;font-size:.82rem;font-weight:700;
+  transition:background .2s,color .2s;white-space:nowrap;
+}
+.nav-cta:hover{background:var(--green);color:#fff}
+.hamburger{display:none;flex-direction:column;gap:5px;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:#fff;border-radius:2px}
+
+/* ─── MOBILE DRAWER ───────────────────────────────────── */
+.drawer{
+  position:fixed;inset:0;z-index:400;background:var(--blue);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5rem;
+  transform:translateX(-100%);transition:transform .35s ease;
+}
+.drawer.open{transform:translateX(0)}
+.drawer a{color:#fff;font-size:1.5rem;font-weight:800;transition:color .2s}
+.drawer a:hover{color:var(--green)}
+.drawer-close{position:absolute;top:18px;right:22px;color:#fff;font-size:2.2rem;line-height:1}
+
+/* ─── HERO ────────────────────────────────────────────── */
+.hero{
+  background:var(--blue);min-height:100vh;
+  padding:calc(var(--nh) + 56px) clamp(1rem,5vw,4rem) 64px;
+  display:flex;align-items:center;position:relative;overflow:hidden;
+}
+/* floating badge circles */
+.hero-badges{
+  position:absolute;top:80px;right:clamp(1rem,4vw,3.5rem);
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:2;
+}
+.badge{
+  border-radius:50%;border:2px solid rgba(255,255,255,.28);
+  background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;text-align:center;line-height:1.25;
+  font-size:.58rem;letter-spacing:.4px;text-transform:uppercase;padding:6px;
+}
+.badge.lg{width:80px;height:80px}
+.badge.md{width:64px;height:64px;border-color:var(--green);background:rgba(74,222,128,.18);font-size:.62rem}
+.badge.sm{width:52px;height:52px;font-size:.55rem}
+
+.hero-inner{position:relative;z-index:1;width:100%;max-width:1100px;margin:0 auto}
+
+.hero h1{
+  font-size:clamp(3rem,8vw,5.8rem);font-weight:900;
+  color:#fff;line-height:1.02;letter-spacing:-2.5px;margin-bottom:20px;
+}
+.hero h1 em{font-style:italic}
+.underline-wrap{position:relative;display:inline-block}
+.underline-wrap::after{
+  content:'';position:absolute;left:0;bottom:-5px;width:100%;height:5px;
+  background:var(--green);border-radius:3px;
+}
+.hero-sub{
+  color:rgba(255,255,255,.75);font-size:clamp(.88rem,1.5vw,1.05rem);
+  line-height:1.78;max-width:500px;margin-bottom:30px;
+}
+.hero-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#fff;color:var(--blue);border-radius:50px;
+  padding:13px 32px;font-weight:700;font-size:.9rem;
+  box-shadow:0 8px 30px rgba(0,0,0,.22);
+  transition:background .2s,color .2s,transform .25s,box-shadow .25s;
+}
+.hero-btn:hover{background:var(--green);color:#fff;transform:translateY(-3px);box-shadow:0 18px 44px rgba(0,0,0,.28)}
+.hero-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.hero-foot{margin-top:44px;color:rgba(255,255,255,.42);font-size:.78rem;line-height:1.8;max-width:540px}
+
+/* ─── SECTION LABEL ───────────────────────────────────── */
+.sec-label{
+  text-align:center;padding:48px 5% 0;
+  font-size:.66rem;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;color:var(--gray);
+}
+.sec-label.light{color:rgba(255,255,255,.5);background:var(--blue);padding-bottom:0}
+
+/* ─── SERVICES ────────────────────────────────────────── */
+.services-section{background:var(--off);padding:36px clamp(1rem,5vw,4rem) 70px}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1100px;margin:0 auto}
+.svc-card{
+  background:#fff;border-radius:var(--radius);padding:30px 24px;
+  box-shadow:0 2px 14px rgba(23,64,212,.07);
+  transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column;
+}
+.svc-card:hover{transform:translateY(-5px);box-shadow:0 14px 40px rgba(23,64,212,.14)}
+.svc-icon{width:48px;height:48px;border-radius:12px;background:var(--card-bg);display:flex;align-items:center;justify-content:center;margin-bottom:16px;flex-shrink:0}
+.svc-icon svg{width:22px;height:22px;stroke:var(--blue);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.svc-card h3{font-size:.95rem;font-weight:700;margin-bottom:10px}
+.svc-card p{font-size:.8rem;color:var(--gray);line-height:1.72;flex:1}
+
+/* ─── TESTIMONIALS ────────────────────────────────────── */
+.testi-section{background:#fff;padding:70px clamp(1rem,5vw,4rem)}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1100px;margin:0 auto}
+.testi-card{background:var(--off);border-radius:var(--radius);padding:22px 20px}
+.stars{color:var(--yellow);font-size:.88rem;letter-spacing:1px;margin-bottom:8px}
+.t-name{font-weight:700;font-size:.86rem;margin-bottom:1px}
+.t-role{font-size:.72rem;color:var(--gray);margin-bottom:10px}
+.t-text{font-size:.79rem;color:#444;line-height:1.72;font-style:italic}
+
+/* ─── ABOUT ───────────────────────────────────────────── */
+.about-section{background:#fff;padding:70px clamp(1rem,5vw,4rem)}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:1000px;margin:0 auto}
+.about-card{background:var(--off);border-radius:var(--radius);padding:26px 22px}
+.about-card h3{font-size:.66rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:10px}
+.about-card p,.about-card li{font-size:.8rem;color:#444;line-height:1.72}
+.about-card ul li{padding:4px 0;border-bottom:1px solid var(--gray-lt)}
+.about-card ul li:last-child{border:none}
+.about-link{
+  display:inline-block;margin-top:14px;background:var(--blue);color:#fff;
+  border-radius:50px;padding:9px 20px;font-size:.76rem;font-weight:700;
+  transition:background .2s;
+}
+.about-link:hover{background:var(--blue-dk)}
+
+/* ─── BOOST ───────────────────────────────────────────── */
+.boost-section{background:var(--blue);padding:70px clamp(1rem,5vw,4rem)}
+.boost-inner{max-width:1100px;margin:0 auto}
+.boost-header{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin-bottom:40px}
+.boost-header h2{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.5px}
+.boost-header p{color:rgba(255,255,255,.7);font-size:.85rem;line-height:1.75;margin-top:10px}
+.chips{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.chip{
+  border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.1);
+  color:#fff;border-radius:50px;padding:6px 14px;
+  font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;
+}
+.chip-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.boost-rows{display:flex;flex-direction:column;gap:20px}
+.boost-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.boost-row.graphics-row{grid-template-columns:1.5fr 0.5fr}
+.boost-card{
+  background:#fff;border-radius:var(--radius);padding:28px 24px;
+  transition:transform .25s;
+}
+.boost-card:hover{transform:translateY(-4px)}
+.boost-card h3{font-size:1rem;font-weight:800;margin-bottom:8px}
+.boost-card p{font-size:.8rem;color:var(--gray);line-height:1.68}
+
+/* ─── PORTFOLIO ───────────────────────────────────────── */
+.port-section{background:#fff;padding:70px clamp(1rem,5vw,4rem)}
+.port-filter{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:22px 0 36px}
+.f-btn{
+  padding:8px 20px;border-radius:50px;
+  border:1.5px solid var(--gray-lt);background:#fff;
+  font-size:.79rem;font-weight:600;color:#111;
+  transition:all .2s;
+}
+.f-btn.on,.f-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.port-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  max-width:1100px;margin:0 auto;
+  grid-auto-rows:180px;
+}
+.p-item{
+  border-radius:var(--radius-sm);overflow:hidden;background:#dde3f5;
+  position:relative;cursor:pointer;transition:transform .25s;
+}
+.p-item:hover{transform:scale(1.03)}
+.p-item.w2{grid-column:span 2}
+.p-item.h2{grid-row:span 2}
+.p-ph{
+  width:100%;height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:7px;color:#8a92b2;font-size:.7rem;font-weight:600;text-align:center;padding:8px;
+}
+.p-ph svg{width:26px;height:26px;opacity:.3;fill:none;stroke:#8a92b2;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.p-ov{
+  position:absolute;inset:0;
+  background:rgba(23,64,212,.88);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s;
+}
+.p-item:hover .p-ov{opacity:1}
+.p-ov span{color:#fff;font-weight:700;font-size:.82rem}
+
+/* ─── CTA ─────────────────────────────────────────────── */
+.cta-section{background:var(--blue);padding:88px clamp(1rem,5vw,4rem);text-align:center}
+.cta-section h2{font-size:clamp(1.8rem,4.5vw,3rem);font-weight:900;color:#fff;letter-spacing:-.5px;margin-bottom:14px}
+.cta-section p{color:rgba(255,255,255,.72);font-size:.92rem;margin-bottom:30px;max-width:460px;margin-inline:auto}
+.cta-section .cta-btn{
+  display:inline-block;background:#fff;color:var(--blue);
+  border-radius:50px;padding:15px 40px;font-weight:800;font-size:.9rem;
+  box-shadow:0 8px 28px rgba(0,0,0,.2);
+  transition:background .2s,color .2s,transform .2s,box-shadow .2s;
+}
+.cta-section .cta-btn:hover{background:var(--green);color:#fff;transform:translateY(-3px);box-shadow:0 18px 44px rgba(0,0,0,.28)}
+
+/* ─── FOOTER ──────────────────────────────────────────── */
+footer{background:var(--dark);color:rgba(255,255,255,.52);padding:60px clamp(1rem,5vw,4rem) 24px}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;max-width:1100px;margin:0 auto}
+.foot-logo{font-size:1.2rem;font-weight:900;color:#fff;margin-bottom:12px}
+.foot-logo span{color:var(--green)}
+.foot-about p{font-size:.8rem;line-height:1.72;max-width:230px;margin-bottom:18px}
+.socials{display:flex;gap:8px}
+.soc{
+  width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:.7rem;font-weight:700;transition:background .2s;
+}
+.soc:hover{background:var(--blue)}
+.foot-col h4{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:14px}
+.foot-col li{margin-bottom:9px}
+.foot-col a{font-size:.79rem;color:rgba(255,255,255,.5);transition:color .2s}
+.foot-col a:hover{color:#fff}
+.foot-bottom{
+  border-top:1px solid rgba(255,255,255,.1);
+  margin-top:48px;padding-top:20px;max-width:1100px;margin-inline:auto;
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.72rem;flex-wrap:wrap;gap:8px;
+}
+
+/* ─── RESPONSIVE ──────────────────────────────────────── */
+@media(max-width:1024px){
+  .svc-grid{grid-template-columns:1fr 1fr}
+  .boost-header{grid-template-columns:1fr}
+  .boost-header-img{display:none}
+  .foot-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .nav-links,.nav-cta{display:none}
+  .hamburger{display:flex}
+  .svc-grid{grid-template-columns:1fr}
+  .testi-grid{grid-template-columns:1fr}
+  .about-grid{grid-template-columns:1fr}
+  .boost-row,.boost-row.graphics-row{grid-template-columns:1fr}
+  .port-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:130px}
+  .p-item.w2{grid-column:span 2}
+  .p-item.h2{grid-row:span 1}
+  .foot-grid{grid-template-columns:1fr 1fr}
+  .hero-badges .badge.sm{display:none}
+}
+@media(max-width:480px){
+  .testi-grid,.about-grid,.svc-grid{grid-template-columns:1fr}
+  .port-grid{grid-template-columns:1fr 1fr;grid-auto-rows:110px}
+  .foot-grid{grid-template-columns:1fr}
+  .hero-badges{display:none}
+  .foot-bottom{flex-direction:column;text-align:center}
+  .slideshow-wrap{height:300px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ DRAWER ═════════════════════════════════════════════════ -->
+<div class="drawer" id="drawer">
+  <button class="drawer-close" onclick="closeDrawer()" aria-label="Close">✕</button>
+  <a href="#home"      onclick="closeDrawer()">Home</a>
+  <a href="#services"  onclick="closeDrawer()">Services</a>
+  <a href="#about"     onclick="closeDrawer()">About</a>
+  <a href="#portfolio" onclick="closeDrawer()">Portfolio</a>
+  <a href="#contact"   onclick="closeDrawer()">Contact</a>
+</div>
+
+<!-- ═══ NAV ════════════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="nav-logo">cgd<span>concepts</span></div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#portfolio">Portfolio</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="nav-cta">Get Started</button>
+  <button class="hamburger" onclick="openDrawer()" aria-label="Open menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ═══ HERO ════════════════════════════════════════════════════ -->
+<section class="hero" id="home">
+  <!-- floating badge stickers (top-right, matching screenshot) -->
+  <div class="hero-badges">
+    <div class="badge lg">TOP<br>RATED<br>STUDIO</div>
+    <div class="badge md">★★★★★<br><span style="font-size:.55rem;letter-spacing:.5px">VERIFIED</span></div>
+    <div class="badge sm">100+<br>PROJ</div>
+  </div>
+
+  <div class="hero-inner">
+    <h1 class="reveal">
+      We Build<br>
+      <span class="underline-wrap">Brands</span> that<br>
+      <em>Stand Out.</em>
+    </h1>
+
+    <p class="hero-sub reveal" style="transition-delay:.1s">
+      At CGD Concepts, we transform ideas into powerful visual identities —
+      graphics, printing, and product design that makes a lasting impression.
+    </p>
+
+    <a href="#services" class="hero-btn reveal" style="transition-delay:.18s">
+      Explore our work
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+    </a>
+
+    <p class="hero-foot reveal" style="transition-delay:.26s">
+      We at CGD Concepts transform ideas into powerful visual identities with graphics printing
+      and product design that deserves a lasting impression.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ SERVICES ════════════════════════════════════════════════ -->
+<p class="sec-label reveal" id="services">Our Services</p>
+<section class="services-section">
+  <div class="svc-grid">
+
+    <div class="svc-card reveal" style="transition-delay:.05s">
+      <div class="svc-icon pulse">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>
+      </div>
+      <h3>Graphics Design</h3>
+      <p>From logos and brand kits to banners and social media content — we craft visuals that make your brand instantly recognizable and impossible to ignore.</p>
+    </div>
+
+    <div class="svc-card reveal" style="transition-delay:.12s">
+      <div class="svc-icon pulse">
+        <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </div>
+      <h3>Printing Services</h3>
+      <p>Whether large format or digital printing, we deliver premium quality prints — business cards, flyers, banners, T-shirts and more with fast turnaround times.</p>
+    </div>
+
+    <div class="svc-card reveal" style="transition-delay:.19s">
+      <div class="svc-icon pulse">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      </div>
+      <h3>Product Design &amp; Branding</h3>
+      <p>Complete brand identity systems — packaging, merchandise, and product aesthetics designed to tell your story and win your audience at first glance.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS ════════════════════════════════════════════ -->
+<p class="sec-label reveal">Clients Testimonial</p>
+<section class="testi-section">
+  <div class="testi-grid">
+
+    <div class="testi-card reveal" style="transition-delay:.05s">
+      <div class="stars">★★★★★</div>
+      <p class="t-name">Faith Jeremiah Ubosson</p>
+      <p class="t-role">CEO, Boldmark Agency</p>
+      <p class="t-text">"Absolutely exceptional work — our brand identity was completely transformed. The team understood our vision and delivered beyond all expectations."</p>
+    </div>
+
+    <div class="testi-card reveal" style="transition-delay:.12s">
+      <div class="stars">★★★★★</div>
+      <p class="t-name">Dankwa Akwasi</p>
+      <p class="t-role">Marketing Director</p>
+      <p class="t-text">"The print quality was outstanding and delivery was faster than promised. CGD Concepts is now our go-to for all branding and print needs."</p>
+    </div>
+
+    <div class="testi-card reveal" style="transition-delay:.19s">
+      <div class="stars">★★★★☆</div>
+      <p class="t-name">Leticia Ofori-Atta</p>
+      <p class="t-role">Founder, Nova Brands</p>
+      <p class="t-text">"From concept to final output, working with CGD Concepts was a seamless experience. Highly professional and incredibly talented team."</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ ABOUT ════════════════════════════════════════════════════ -->
+<p class="sec-label reveal" id="about">About Us</p>
+<section class="about-section">
+  <div class="about-grid">
+
+    <div class="about-card reveal" style="transition-delay:.05s">
+      <h3>Who We Are</h3>
+      <p>CGD Concepts is a full-service creative agency built on passion, precision, and purpose. We work with startups, SMEs, and enterprises to build memorable brands that drive real results.</p>
+      <a href="#" class="about-link">Learn More →</a>
+    </div>
+
+    <div class="about-card reveal" style="transition-delay:.12s">
+      <h3>Our Mission</h3>
+      <p>To deliver world-class design and branding solutions that help businesses grow, connect with their audience, and stand out in a crowded marketplace every day.</p>
+    </div>
+
+    <div class="about-card reveal" style="transition-delay:.05s">
+      <h3>Our Vision</h3>
+      <p>To become Africa's most trusted creative partner — a studio where bold ideas meet flawless execution and every brand story is told with intention and excellence.</p>
+    </div>
+
+    <div class="about-card reveal" style="transition-delay:.12s">
+      <h3>Our Values</h3>
+      <ul>
+        <li>✦ Quality — we never compromise on craft</li>
+        <li>✦ Creativity — fresh ideas for every brief</li>
+        <li>✦ Integrity — honest timelines &amp; pricing</li>
+        <li>✦ Partnership — your success is ours</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ BOOST / SERVICES PAGE ════════════════════════════════════ -->
+<p class="sec-label light reveal">Services Page</p>
+<section class="boost-section">
+  <div class="boost-inner">
+
+    <!-- Top header row -->
+    <div class="boost-header">
+      <div class="reveal">
+        <h2>Boost your<br>brand with our<br>expertise</h2>
+        <p>Attention-grabbing visuals and quality packaging that elevate your presence across every platform and channel.</p>
+        <div class="chips">
+          <span class="chip"><span class="chip-dot" style="background:#f59e0b"></span>Figma</span>
+          <span class="chip"><span class="chip-dot" style="background:#22c55e"></span>Illustrator</span>
+          <span class="chip"><span class="chip-dot" style="background:#60a5fa"></span>Photoshop</span>
+        </div>
+      </div>
+      <div class="img-slot dashed boost-header-img reveal" style="min-height:200px;transition-delay:.12s">
+        <svg viewBox="0 0 24 24"><path d="M2.25 15.75l5.16-5.16a2.25 2.25 0 013.18 0l5.16 5.16m-1.5-1.5l1.41-1.41a2.25 2.25 0 013.18 0l2.91 2.91M3 20.25h18"/></svg>
+        <span>Hero image placeholder</span>
+      </div>
+    </div>
+
+    <!-- Service rows -->
+    <div class="boost-rows">
+
+      <!-- Graphics Design — GALLERY -->
+      <div class="boost-row graphics-row">
+
+        <!-- LEFT: Gallery box -->
+        <div class="reveal" style="display:flex;flex-direction:column">
+          <p class="gallery-label">Our Work</p>
+
+          <div class="gallery-box" id="galleryBox">
+
+            <!-- Counter -->
+            <div class="g-counter" id="gCounter">1 / 6</div>
+
+            <!-- Arrows -->
+            <button class="g-arrow prev" id="gPrev" aria-label="Previous">&#8592;</button>
+            <button class="g-arrow next" id="gNext" aria-label="Next">&#8594;</button>
+
+            <!-- Panel 0 – Abaya & Bougee -->
+            <div class="g-panel active" data-index="0">
+              <img src="/mnt/user-data/uploads/Abaya___Bougee_II.png" alt="Abaya & Bougee" loading="eager"/>
+              <div class="g-caption">
+                <span class="g-cat">Branding &amp; Identity</span>
+                <span class="g-title">Abaya &amp; Bougee — Thrifted Luxury</span>
+              </div>
+            </div>
+
+            <!-- Panel 1 – Xtraordinary Queen -->
+            <div class="g-panel" data-index="1">
+              <img src="/mnt/user-data/uploads/Xtraordinary_Queen_May_2026.png" alt="Xtraordinary Queen" loading="lazy"/>
+              <div class="g-caption">
+                <span class="g-cat">Event Design</span>
+                <span class="g-title">Xtraordinary Queen — May 2026</span>
+              </div>
+            </div>
+
+            <!-- Panel 2 – Unshakeable Praise -->
+            <div class="g-panel" data-index="2">
+              <img src="/mnt/user-data/uploads/1778923230887_Unshakeable_Praise_2026_Main_Event.png" alt="Unshakeable Praise 2026" loading="lazy"/>
+              <div class="g-caption">
+                <span class="g-cat">Event Flyer</span>
+                <span class="g-title">Unshakeable Praise 2026</span>
+              </div>
+            </div>
+
+            <!-- Panel 3 – LBS May 2026 -->
+            <div class="g-panel" data-index="3">
+              <img src="/mnt/user-data/uploads/1778923230889_LBS_May_2026.png" alt="LBS Hello May" loading="lazy"/>
+              <div class="g-caption">
+                <span class="g-cat">Corporate Design</span>
+                <span class="g-title">LBS Sustainability — Hello May 2026</span>
+              </div>
+            </div>
+
+            <!-- Panel 4 – LBS Carousel Ads -->
+            <div class="g-panel" data-index="4">
+              <img src="/mnt/user-data/uploads/1778923230890_LBS_NFLM_Carousels_Ads_1.png" alt="LBS NFLM Carousel" loading="lazy"/>
+              <div class="g-caption">
+                <span class="g-cat">Social Media Design</span>
+                <span class="g-title">LBS — Non-Profit Leadership Series</span>
+              </div>
+            </div>
+
+            <!-- Panel 5 – TOTM Jars of Clay -->
+            <div class="g-panel" data-index="5">
+              <img src="/mnt/user-data/uploads/1778923230891_TOTM_May__26_Part_I___II__.png" alt="TOTM Jars of Clay" loading="lazy"/>
+              <div class="g-caption">
+                <span class="g-cat">Ministry Event Design</span>
+                <span class="g-title">TOTM — Jars of Clay, May 2026</span>
+              </div>
+            </div>
+
+          </div><!-- /gallery-box -->
+
+          <!-- Dot strip below box -->
+          <div class="g-dots" id="gDots"></div>
+
+        </div><!-- /left column -->
+
+        <!-- RIGHT: Text card -->
+        <div class="boost-card reveal" style="transition-delay:.12s">
+          <h3>Graphics design</h3>
+          <p>We design everything — from logos and flyers to banners and social media content. Our designs are not only beautiful, but effective and strategic for your brand growth.</p>
+        </div>
+
+      </div>
+
+      <!-- Printing -->
+      <!-- Printing -->
+      <div class="boost-row">
+        <div class="boost-card reveal">
+          <h3>Printing</h3>
+          <p>Whether it's large format or digital printing, we deliver quality prints for all your needs. Flyers, business cards, T-shirts and more. Fast delivery guaranteed.</p>
+        </div>
+        <div class="img-slot dashed reveal" style="min-height:220px;transition-delay:.1s">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Printing services photo</span>
+        </div>
+      </div>
+
+      <!-- UI/UX -->
+      <div class="boost-row">
+        <div class="img-slot dashed reveal" style="min-height:220px">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>UI/UX tools photo</span>
+        </div>
+        <div class="boost-card reveal" style="transition-delay:.1s">
+          <h3>UI/UX</h3>
+          <p>We craft user-friendly and visually compelling interfaces — from wireframe to final design, our focus is on quality, accessibility, and aesthetics. Great UX makes all the difference.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PORTFOLIO ════════════════════════════════════════════════ -->
+<section class="port-section" id="portfolio">
+  <p class="sec-label reveal" style="padding-top:0">Portfolio</p>
+
+  <div class="port-filter reveal" style="transition-delay:.08s">
+    <button class="f-btn on" data-cat="all">All Works</button>
+    <button class="f-btn" data-cat="branding">Branding</button>
+    <button class="f-btn" data-cat="print">Print</button>
+    <button class="f-btn" data-cat="digital">Digital</button>
+    <button class="f-btn" data-cat="uiux">UI/UX</button>
+  </div>
+
+  <div class="port-grid" id="portGrid">
+
+    <div class="p-item w2 h2 reveal" data-cat="branding">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span>Featured Branding</span>
+      </div>
+      <div class="p-ov"><span>View Project →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="digital" style="transition-delay:.05s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20"/></svg>
+        <span>Digital Design</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="print" style="transition-delay:.1s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Print Design</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="branding" style="transition-delay:.05s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span>Brand Identity</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="print" style="transition-delay:.1s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span>Flyer Design</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="uiux" style="transition-delay:.15s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span>UI/UX Design</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="digital" style="transition-delay:.05s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span>Social Media</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="branding" style="transition-delay:.1s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        <span>Packaging</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="print" style="transition-delay:.05s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/></svg>
+        <span>Business Card</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="uiux" style="transition-delay:.1s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+        <span>App Screen</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="print" style="transition-delay:.15s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span>Stationery</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+    <div class="p-item reveal" data-cat="digital" style="transition-delay:.2s">
+      <div class="p-ph pulse">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>
+        <span>Digital Art</span>
+      </div>
+      <div class="p-ov"><span>View →</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ CTA ══════════════════════════════════════════════════════ -->
+<section class="cta-section" id="contact">
+  <div class="reveal">
+    <h2>Ready to Build Your Brand?</h2>
+    <p>Let's create something extraordinary together. Get in touch today.</p>
+    <a href="mailto:hello@cgdconcepts.com" class="cta-btn">Start a Project →</a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════ -->
+<footer>
+  <div class="foot-grid">
+
+    <div class="foot-about">
+      <div class="foot-logo">cgd<span>concepts</span></div>
+      <p>We build brands that stand out — through strategy, design, and print excellence across Africa and beyond.</p>
+      <div class="socials">
+        <a class="soc" href="#" aria-label="Facebook">f</a>
+        <a class="soc" href="#" aria-label="Instagram">ig</a>
+        <a class="soc" href="#" aria-label="Twitter">tw</a>
+        <a class="soc" href="#" aria-label="LinkedIn">in</a>
+      </div>
+    </div>
+
+    <div class="foot-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="#">Graphics Design</a></li>
+        <li><a href="#">Printing Services</a></li>
+        <li><a href="#">Product Design</a></li>
+        <li><a href="#">UI / UX Design</a></li>
+        <li><a href="#">Brand Identity</a></li>
+      </ul>
+    </div>
+
+    <div class="foot-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Our Work</a></li>
+        <li><a href="#">Testimonials</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+      </ul>
+    </div>
+
+    <div class="foot-col">
+      <h4>Contact</h4>
+      <ul>
+        <li><a href="mailto:hello@cgdconcepts.com">hello@cgdconcepts.com</a></li>
+        <li><a href="#">+234 000 000 0000</a></li>
+        <li><a href="#">Lagos, Nigeria</a></li>
+        <li><a href="#">WhatsApp Us</a></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="foot-bottom">
+    <span>© 2024 CGD Concepts. All rights reserved.</span>
+    <span>Designed &amp; Built with ♥ by CGD</span>
+  </div>
+</footer>
+
+<!-- ═══ SCRIPTS ═══════════════════════════════════════════════════ -->
+<script>
+/* ─ Mobile drawer ─ */
+function openDrawer(){ document.getElementById('drawer').classList.add('open') }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open') }
+
+/* ─ Nav scroll shadow ─ */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 10)
+}, { passive: true })
+
+/* ─ Scroll reveal ─ */
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('in')
+      revealObs.unobserve(e.target)
+    }
+  })
+}, { threshold: 0.1 })
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el))
+
+/* ─ Portfolio filter ─ */
+document.querySelectorAll('.f-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('on'))
+    this.classList.add('on')
+    const cat = this.dataset.cat
+    document.querySelectorAll('.p-item').forEach(item => {
+      const show = cat === 'all' || item.dataset.cat === cat
+      item.style.display = show ? '' : 'none'
+    })
+  })
+})
+
+/* ══════════════════════════════
+   GALLERY ENGINE  (manual only)
+══════════════════════════════ */
+(function(){
+  const TOTAL   = 6;
+  let current   = 0;
+
+  const panels   = Array.from(document.querySelectorAll('.g-panel'));
+  const counterEl= document.getElementById('gCounter');
+  const dotsEl   = document.getElementById('gDots');
+  const prevBtn  = document.getElementById('gPrev');
+  const nextBtn  = document.getElementById('gNext');
+  const box      = document.getElementById('galleryBox');
+
+  // Build dots
+  for(let i=0;i<TOTAL;i++){
+    const d=document.createElement('button');
+    d.className='g-dot'+(i===0?' on':'');
+    d.setAttribute('aria-label','Image '+(i+1));
+    d.onclick=()=>go(i);
+    dotsEl.appendChild(d);
+  }
+
+  function go(n, dir){
+    if(n===current) return;
+    const direction = (dir !== undefined) ? dir : (n > current ? 1 : -1);
+    const prev = current;
+    current = ((n % TOTAL) + TOTAL) % TOTAL;
+
+    // Outgoing panel: slide out opposite to direction
+    const outgoing = panels[prev];
+    outgoing.classList.remove('active');
+    outgoing.classList.add(direction > 0 ? 'leaving' : 'leaving-right');
+
+    // Incoming panel: start off-screen on the correct side
+    const incoming = panels[current];
+    // Remove any leftover classes first (no transition)
+    incoming.style.transition = 'none';
+    incoming.classList.remove('active','leaving','leaving-right','from-left');
+    incoming.classList.add(direction > 0 ? '' : 'from-left');
+    if(direction < 0) incoming.classList.add('from-left');
+
+    // Force reflow so the start position registers before we apply transition
+    void incoming.offsetWidth;
+    incoming.style.transition = '';
+
+    // Slide it in
+    incoming.classList.remove('from-left');
+    incoming.classList.add('active');
+
+    // Clean up outgoing class after transition ends
+    outgoing.addEventListener('transitionend', function cleanup(){
+      outgoing.classList.remove('leaving','leaving-right');
+      outgoing.removeEventListener('transitionend', cleanup);
+    });
+
+    // Update dots & counter
+    document.querySelectorAll('.g-dot').forEach((d,i)=>d.classList.toggle('on',i===current));
+    counterEl.textContent = (current+1)+' / '+TOTAL;
+
+    // Arrow state
+    prevBtn.style.opacity = current === 0 ? '0.35' : '1';
+    nextBtn.style.opacity = current === TOTAL-1 ? '0.35' : '1';
+  }
+
+  prevBtn.onclick = ()=>{ if(current>0) go(current-1, -1); };
+  nextBtn.onclick = ()=>{ if(current<TOTAL-1) go(current+1, 1); };
+
+  // Keyboard support
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight' && current<TOTAL-1) go(current+1,1);
+    if(e.key==='ArrowLeft'  && current>0)       go(current-1,-1);
+  });
+
+  // Touch / swipe
+  let tx=0;
+  box.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+  box.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    if(dx<-40 && current<TOTAL-1) go(current+1,1);
+    if(dx>40  && current>0)       go(current-1,-1);
+  },{passive:true});
+
+  // Initial state
+  prevBtn.style.opacity='0.35';
+})();
+
+
+/* ─ Smooth active nav highlight ─ */
+const sections = document.querySelectorAll('section[id]')
+window.addEventListener('scroll', () => {
+  let cur = ''
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 90) cur = s.id })
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    const active = a.getAttribute('href') === '#' + cur
+    a.style.color = active ? '#fff' : ''
+    a.style.fontWeight = active ? '700' : ''
+  })
+}, { passive: true })
+</script>
+</body>
+</html>
