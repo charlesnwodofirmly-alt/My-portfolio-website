@@ -1087,8 +1087,10 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
 (function () {
 
   /* ── Constants ── */
-  var TOTAL = 3;
-  var current = 0;
+  var TOTAL    = 3;
+  var current  = 0;
+  var INTERVAL = 5000; /* autoplay delay in ms */
+  var timer    = null; /* holds the setInterval reference */
 
   /* ── Element references ── */
   var box      = document.getElementById('galleryBox');
@@ -1108,21 +1110,20 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
     var dot = document.createElement('button');
     dot.className = 'g-dot' + (i === 0 ? ' on' : '');
     dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
-    /* IIFE captures i correctly in the closure */
-    dot.addEventListener('click', (function (idx) {
-      return function () { goTo(idx); };
-    })(i));
+    /* Click handlers are wired after startAutoplay is defined, below */
     dotsEl.appendChild(dot);
   }
 
   /* ── Core navigation function ── */
   function goTo(n, direction) {
-    if (n === current) return;
+    /* Wrap around for infinite looping */
+    var next = ((n % TOTAL) + TOTAL) % TOTAL;
+    if (next === current) return;
 
     /* Default direction: forward if index increases */
-    var dir = (direction !== undefined) ? direction : (n > current ? 1 : -1);
+    var dir = (direction !== undefined) ? direction : (next > current ? 1 : -1);
     var prev = current;
-    current = ((n % TOTAL) + TOTAL) % TOTAL;
+    current = next;
 
     /* --- Outgoing panel --- */
     var outgoing = panels[prev];
@@ -1151,7 +1152,7 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
       outgoing.removeEventListener('transitionend', cleanup);
     });
 
-    /* --- Update dots (Array.from avoids NodeList.forEach issue) --- */
+    /* --- Update dots --- */
     var allDots = Array.from(dotsEl.querySelectorAll('.g-dot'));
     for (var i = 0; i < allDots.length; i++) {
       allDots[i].classList.toggle('on', i === current);
@@ -1160,36 +1161,67 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
     /* --- Update counter --- */
     counterEl.textContent = (current + 1) + ' / ' + TOTAL;
 
-    /* --- Disable/enable edge arrows --- */
-    prevBtn.disabled = (current === 0);
-    nextBtn.disabled = (current === TOTAL - 1);
+    /* --- Arrows: always enabled now (infinite loop) --- */
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
   }
 
-  /* ── Wire up arrow buttons ── */
+  /* ── Autoplay: advance one slide forward every 5 seconds ── */
+  function startAutoplay() {
+    stopAutoplay(); /* clear any existing timer first */
+    timer = setInterval(function () {
+      goTo((current + 1) % TOTAL, 1);
+    }, INTERVAL);
+  }
+
+  function stopAutoplay() {
+    if (timer !== null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  /* ── Wire up arrow buttons — reset timer on manual nav ── */
   prevBtn.addEventListener('click', function () {
-    if (current > 0) goTo(current - 1, -1);
+    goTo((current - 1 + TOTAL) % TOTAL, -1);
+    startAutoplay(); /* restart timer so next auto-advance is 5s from now */
   });
   nextBtn.addEventListener('click', function () {
-    if (current < TOTAL - 1) goTo(current + 1, 1);
+    goTo((current + 1) % TOTAL, 1);
+    startAutoplay();
   });
 
   /* ── Keyboard arrow support ── */
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight' && current < TOTAL - 1) goTo(current + 1, 1);
-    if (e.key === 'ArrowLeft'  && current > 0)         goTo(current - 1, -1);
-    if (e.key === 'Escape')                             closeModal();
+    if (e.key === 'ArrowRight') { goTo((current + 1) % TOTAL, 1);              startAutoplay(); }
+    if (e.key === 'ArrowLeft')  { goTo((current - 1 + TOTAL) % TOTAL, -1);     startAutoplay(); }
+    if (e.key === 'Escape')       closeModal();
   });
 
   /* ── Touch / swipe support ── */
   var touchStartX = 0;
   box.addEventListener('touchstart', function (e) {
     touchStartX = e.touches[0].clientX;
+    stopAutoplay(); /* pause while finger is down */
   }, { passive: true });
   box.addEventListener('touchend', function (e) {
     var dx = e.changedTouches[0].clientX - touchStartX;
-    if (dx < -40 && current < TOTAL - 1) goTo(current + 1, 1);
-    if (dx >  40 && current > 0)         goTo(current - 1, -1);
+    if (dx < -40) goTo((current + 1) % TOTAL, 1);
+    if (dx >  40) goTo((current - 1 + TOTAL) % TOTAL, -1);
+    startAutoplay(); /* resume after swipe */
   }, { passive: true });
+
+  /* ── Pause autoplay when mouse is over the gallery ── */
+  box.addEventListener('mouseenter', stopAutoplay);
+  box.addEventListener('mouseleave', startAutoplay);
+
+  /* ── Dot clicks: reset timer on manual nav ── */
+  var allDotBtns = Array.from(dotsEl.querySelectorAll('.g-dot'));
+  for (var d = 0; d < allDotBtns.length; d++) {
+    allDotBtns[d].addEventListener('click', (function (idx) {
+      return function () { goTo(idx); startAutoplay(); };
+    })(d));
+  }
 
   /* ════════════════════════════════════════════════
      MODAL — open on active slide click
@@ -1212,7 +1244,6 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
       var modalImg   = document.createElement('img');
       modalImg.src   = img.src;
       modalImg.alt   = img.alt;
-      /* Insert before close button */
       modalInner.insertBefore(modalImg, modalClose);
     }
 
@@ -1224,14 +1255,16 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
       '<span class="g-title">' + title + '</span>';
     modalInner.appendChild(caption);
 
-    /* Show modal */
+    /* Show modal and pause autoplay */
     modal.classList.add('open');
-    document.body.style.overflow = 'hidden'; /* prevent background scroll */
+    document.body.style.overflow = 'hidden';
+    stopAutoplay();
   }
 
   function closeModal() {
     modal.classList.remove('open');
     document.body.style.overflow = '';
+    startAutoplay(); /* resume after modal closes */
   }
 
   /* Click on any active panel opens the modal */
@@ -1246,13 +1279,14 @@ for (const btn of Array.from(document.querySelectorAll('.f-btn'))) {
   /* Close via X button */
   modalClose.addEventListener('click', closeModal);
 
-  /* Close by clicking the backdrop (outside the inner box) */
+  /* Close by clicking the backdrop */
   modal.addEventListener('click', function (e) {
     if (e.target === modal) closeModal();
   });
 
-  /* ── Initial state ── */
-  prevBtn.disabled = true; /* at slide 0, prev is disabled */
+  /* ── Initial state: both arrows enabled (infinite loop), start autoplay ── */
+  prevBtn.disabled = false;
+  startAutoplay();
 
 })();
 
